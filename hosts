@@ -1,0 +1,9 @@
+[backend]
+u21.local ansible_host=192.168.88.15
+
+[frontend]
+c8.local ansible_host=192.168.88.20
+
+[all_groups:children]
+backend
+frontend

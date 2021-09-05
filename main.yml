@@ -1,0 +1,113 @@
+- name: Ping Servers
+  hosts: all_groups
+  become: yes
+
+  tasks:
+
+    - name: Task ping
+      ping:
+
+
+    - name: Check Linux Version
+      debug: var=ansible_distribution
+
+#Disable SElinux and firewalld
+
+    - block:
+        - name: Disable firewalld
+          ansible.builtin.service:
+             name: firewalld
+             state: stopped
+             enabled: false
+
+        - name: Disable SElinux
+          ansible.posix.selinux:
+            state: disabled
+
+      when: ansible_distribution == "CentOS"
+
+#Frontend
+
+- name: Frontend configuration
+  hosts: frontend
+  become: yes
+
+  tasks:
+ 
+    - name: dnf update cache
+      dnf:
+        update_cache: yes
+
+    - name: nginx | install
+      dnf:
+        name: nginx
+        state: present      
+
+    - name: nginx | copy config nginx.conf
+      ansible.builtin.template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/nginx.conf
+        owner: root
+        group: root
+        mode: 0644
+      notify: nginx service restart
+
+    - name: nginx | enable service
+      ansible.builtin.service:
+        name: nginx
+        enabled: yes
+
+  handlers:
+    - name: nginx service restart
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+  
+
+#Backend
+
+- name: Backend configuration
+  hosts: backend
+  become: yes
+
+  tasks:
+
+    - name: apt update cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: netdata | install
+      apt:
+        name: netdata
+        state: present
+
+    - name: netdata | copy config netdata.conf
+      ansible.builtin.template:
+        src: netdata.conf.j2
+        dest: /etc/netdata/netdata.conf
+        owner: root
+        group: root
+        mode: 0644
+      notify: netdata service restart 
+
+  handlers:
+    - name: netdata service restart
+      ansible.builtin.systemd:
+        name: netdata
+        state: restarted
+       
+#Test
+
+- name: hostname and http status code check
+  hosts: all_groups
+  become: yes
+
+  tasks:
+
+    - name: hostname check
+      debug: var=ansible_hostname
+    
+    - name: Check http return status code 200
+      uri:
+        url: http://{{ hostvars[groups.frontend.0].ansible_host }}:{{in_nginx_port}}

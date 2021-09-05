@@ -1,0 +1,5 @@
+ansible_user: emp
+ansible_password: 123
+ansible_sudo_pass: 123
+in_nginx_port: 80
+out_nginx_port: 19999
