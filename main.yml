@@ -1,12 +1,9 @@
-- name: Ping Servers
+- name: Prepare
   hosts: all_groups
   become: yes
+  any_errors_fatal: true
 
   tasks:
-
-    - name: Task ping
-      ping:
-
 
     - name: Check Linux Version
       debug: var=ansible_distribution
